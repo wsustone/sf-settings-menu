@@ -1,11 +1,19 @@
+//! Settings menu plugin for StrategyForge
+
+pub mod settings;
+pub use settings::*;
+
 use bevy::prelude::*;
 use strategyforge_core::menu::MenuItemPlugin;
 
+/// Main plugin for settings menu
 pub struct SettingsMenuPlugin;
 
 impl Plugin for SettingsMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_settings_menu);
+        app
+            .add_plugins(SettingsPlugin)
+            .add_systems(Startup, setup_settings_menu);
     }
 }
 
@@ -16,6 +24,12 @@ impl MenuItemPlugin for SettingsMenuPlugin {
         });
     }
 }
+
+// Re-export for easier use
+pub use settings::{
+    VideoSettings, AudioSettings, GameSettings,
+    Settings, SettingsState, SettingsTab
+};
 
 fn setup_settings_button(
     commands: &mut Commands,
@@ -48,13 +62,13 @@ fn setup_settings_button(
 }
 
 fn setup_settings_menu(mut commands: Commands) {
-    // Settings panel implementation would go here
     commands.spawn((
         NodeBundle {
             style: Style {
                 width: Val::Percent(80.0),
                 height: Val::Percent(80.0),
                 position_type: PositionType::Absolute,
+                flex_direction: FlexDirection::Column,
                 ..default()
             },
             background_color: Color::rgba(0.1, 0.1, 0.1, 0.9).into(),
@@ -62,5 +76,96 @@ fn setup_settings_menu(mut commands: Commands) {
             ..default()
         },
         Name::new("SettingsPanel"),
-    ));
+    )).with_children(|parent| {
+        // Add tab navigation for settings categories
+        parent.spawn((
+            NodeBundle {
+                style: Style {
+                    width: Val::Percent(100.0),
+                    height: Val::Px(50.0),
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                },
+                ..default()
+            },
+            Name::new("SettingsTabs"),
+        )).with_children(|parent| {
+            // Video tab
+            parent.spawn((
+                ButtonBundle {
+                    style: Style {
+                        width: Val::Percent(33.0),
+                        height: Val::Percent(100.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Name::new("VideoTab"),
+            )).with_children(|parent| {
+                parent.spawn(TextBundle::from_section(
+                    "Video",
+                    TextStyle {
+                        font_size: 20.0,
+                        ..default()
+                    },
+                ));
+            });
+
+            // Audio tab
+            parent.spawn((
+                ButtonBundle {
+                    style: Style {
+                        width: Val::Percent(33.0),
+                        height: Val::Percent(100.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Name::new("AudioTab"),
+            )).with_children(|parent| {
+                parent.spawn(TextBundle::from_section(
+                    "Audio",
+                    TextStyle {
+                        font_size: 20.0,
+                        ..default()
+                    },
+                ));
+            });
+
+            // Game tab
+            parent.spawn((
+                ButtonBundle {
+                    style: Style {
+                        width: Val::Percent(34.0),
+                        height: Val::Percent(100.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Name::new("GameTab"),
+            )).with_children(|parent| {
+                parent.spawn(TextBundle::from_section(
+                    "Game",
+                    TextStyle {
+                        font_size: 20.0,
+                        ..default()
+                    },
+                ));
+            });
+        });
+
+        // Settings content area
+        parent.spawn((
+            NodeBundle {
+                style: Style {
+                    width: Val::Percent(100.0),
+                    flex_grow: 1.0,
+                    padding: UiRect::all(Val::Px(20.0)),
+                    ..default()
+                },
+                ..default()
+            },
+            Name::new("SettingsContent"),
+        ));
+    });
 }
