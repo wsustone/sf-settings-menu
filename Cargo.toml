@@ -1,0 +1,8 @@
+[package]
+name = "sf-settings-menu"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.14", default-features = false }
+strategyforge-core = { path = "../StrategyForge-Core" }

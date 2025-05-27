@@ -1,0 +1,11 @@
+# Generated files
+/target
+**/*.rs.bk
+
+# IDE specific
+.vscode/
+.idea/
+
+# OS generated
+.DS_Store
+Thumbs.db
