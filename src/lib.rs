@@ -4,6 +4,8 @@ pub mod settings;
 pub use settings::*;
 
 use bevy::prelude::*;
+use sf_ui_common::components::*;
+use sf_ui_common::systems::update as ui_update;
 use strategyforge_core::menu::MenuItemPlugin;
 
 /// Main plugin for settings menu
@@ -11,8 +13,11 @@ pub struct SettingsMenuPlugin;
 
 impl Plugin for SettingsMenuPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(SettingsPlugin)
+        // Initialize common UI components and systems
+        ui_update(app);
+        
+        // Add settings menu specific systems
+        app.add_plugins(SettingsPlugin)
             .add_systems(Startup, setup_settings_menu);
     }
 }
@@ -48,6 +53,7 @@ fn setup_settings_button(
                 },
                 ..default()
             },
+            Focusable::default(),
             Name::new("SettingsButton"),
         )).with_children(|parent| {
             parent.spawn(TextBundle::from_section(
@@ -55,7 +61,7 @@ fn setup_settings_button(
                 TextStyle {
                     font_size: 24.0,
                     ..default()
-                },
+                }
             ));
         });
     });
@@ -168,4 +174,20 @@ fn setup_settings_menu(mut commands: Commands) {
             Name::new("SettingsContent"),
         ));
     });
+}
+
+fn settings_menu_system() {
+    // Main menu logic
+}
+
+fn video_settings_system() {
+    // Video settings logic
+}
+
+fn audio_settings_system() {
+    // Audio settings logic
+}
+
+fn controls_settings_system() {
+    // Controls settings logic
 }
