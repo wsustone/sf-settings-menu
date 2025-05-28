@@ -12,7 +12,8 @@ pub use modules::video::spawn_video_settings;
 
 use bevy::prelude::*;
 use bevy_reflect::Reflect;
-use sf_plugin_template::MenuItemPlugin;
+use sf_plugin_template::{MenuItemPlugin, MenuItem, MenuContent};
+use sf_ui_common::colors;
 use sf_ui_common::components::{Focusable, FocusState, FocusableType};
 
 // Re-export settings types
@@ -65,7 +66,7 @@ impl MenuItemPlugin for SettingsMenuPlugin {
                         margin: UiRect::all(Val::Px(5.0)),
                         ..default()
                     },
-                    background_color: Color::rgb(0.25, 0.25, 0.25).into(),
+                    background_color: colors::button::NORMAL.into(),
                     ..default()
                 },
                 MenuItem {
@@ -89,6 +90,9 @@ impl MenuItemPlugin for SettingsMenuPlugin {
     
     fn on_selected(&self, world: &mut World, content_entity: Entity) {
         // Display settings content when this menu item is selected
+        // Get the asset server before we borrow world
+        let asset_server = world.resource::<AssetServer>().clone();
+        
         let mut entity = world.entity_mut(content_entity);
         entity.despawn_descendants();
         
@@ -131,7 +135,7 @@ impl MenuItemPlugin for SettingsMenuPlugin {
                             flex_direction: FlexDirection::Row,
                             ..default()
                         },
-                        background_color: Color::rgb(0.2, 0.2, 0.2).into(),
+                        background_color: Color::srgb(0.2, 0.2, 0.2).into(),
                         ..default()
                     }
                 ).with_children(|parent| {
@@ -145,7 +149,7 @@ impl MenuItemPlugin for SettingsMenuPlugin {
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
-                            background_color: Color::rgb(0.3, 0.3, 0.3).into(),
+                            background_color: colors::button::PRESSED.into(),
                             ..default()
                         }
                     ).with_children(|parent| {
@@ -171,7 +175,7 @@ impl MenuItemPlugin for SettingsMenuPlugin {
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
-                            background_color: Color::rgb(0.25, 0.25, 0.25).into(),
+                            background_color: colors::button::NORMAL.into(),
                             ..default()
                         }
                     ).with_children(|parent| {
@@ -197,7 +201,7 @@ impl MenuItemPlugin for SettingsMenuPlugin {
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
-                            background_color: Color::rgb(0.25, 0.25, 0.25).into(),
+                            background_color: colors::button::NORMAL.into(),
                             ..default()
                         }
                     ).with_children(|parent| {
@@ -223,7 +227,7 @@ impl MenuItemPlugin for SettingsMenuPlugin {
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
-                            background_color: Color::rgb(0.25, 0.25, 0.25).into(),
+                            background_color: colors::button::NORMAL.into(),
                             ..default()
                         }
                     ).with_children(|parent| {
@@ -250,12 +254,12 @@ impl MenuItemPlugin for SettingsMenuPlugin {
                             padding: UiRect::all(Val::Px(20.0)),
                             ..default()
                         },
-                        background_color: Color::rgb(0.15, 0.15, 0.15).into(),
+                        background_color: colors::button::NORMAL.into(),
                         ..default()
                     },
                 )).with_children(|parent| {
-                    // Add video settings content by default
-                    spawn_video_settings(parent, &world.resource::<AssetServer>());
+                    // Add video settings content by default using our custom spawn function
+                    spawn_video_settings_for_world_builder(parent, &asset_server);
                 });
             });
         });
@@ -264,6 +268,126 @@ impl MenuItemPlugin for SettingsMenuPlugin {
     fn clone_box(&self) -> Box<dyn MenuItemPlugin> {
         Box::new(self.clone())
     }
+}
+
+/// Helper function to spawn video settings in a WorldChildBuilder context
+/// This adapter function converts between different builder types
+fn spawn_video_settings_for_world_builder(parent: &mut WorldChildBuilder, asset_server: &AssetServer) {
+    // Create a custom UI directly to avoid type conversion issues
+    // Implement the video settings UI inline here
+    parent.spawn(
+        NodeBundle {
+            style: Style {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            ..default()
+        }
+    ).with_children(|parent| {
+        // Section title
+        parent.spawn(
+            TextBundle::from_section(
+                "Video Settings",
+                TextStyle {
+                    font_size: 24.0,
+                    color: colors::WHITE,
+                    ..default()
+                }
+            ).with_style(Style {
+                margin: UiRect::vertical(Val::Px(20.0)),
+                ..default()
+            })
+        );
+        
+        // Add settings options directly
+        // Resolution setting
+        parent.spawn(NodeBundle {
+            style: Style {
+                width: Val::Percent(80.0),
+                height: Val::Px(40.0),
+                margin: UiRect::bottom(Val::Px(10.0)),
+                justify_content: JustifyContent::SpaceBetween,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            ..default()
+        }).with_children(|parent| {
+            // Label
+            parent.spawn(TextBundle::from_section(
+                "Resolution",
+                TextStyle {
+                    font_size: 18.0,
+                    color: colors::WHITE,
+                    ..default()
+                }
+            ));
+            
+            // Dropdown button
+            parent.spawn(ButtonBundle {
+                style: Style {
+                    width: Val::Px(180.0),
+                    height: Val::Px(30.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                background_color: colors::button::NORMAL.into(),
+                ..default()
+            }).with_children(|parent| {
+                parent.spawn(TextBundle::from_section(
+                    "1920x1080",
+                    TextStyle {
+                        font_size: 16.0,
+                        color: colors::WHITE,
+                        ..default()
+                    }
+                ));
+            });
+        });
+    });
+}
+
+// Video settings UI is now directly implemented in spawn_video_settings_for_world_builder
+
+/// Helper function to spawn a settings row with a label and content
+fn spawn_setting_row<F>(parent: &mut ChildBuilder, label: &str, content_builder: F) 
+where
+    F: FnOnce(&mut ChildBuilder),
+{
+    parent.spawn(
+        NodeBundle {
+            style: Style {
+                width: Val::Percent(80.0),
+                height: Val::Px(60.0),
+                flex_direction: FlexDirection::Row,
+                justify_content: JustifyContent::SpaceBetween,
+                align_items: AlignItems::Center,
+                margin: UiRect::vertical(Val::Px(5.0)),
+                padding: UiRect::horizontal(Val::Px(20.0)),
+                ..default()
+            },
+            background_color: Color::rgb(0.2, 0.2, 0.2).into(),
+            ..default()
+        }
+    ).with_children(|parent| {
+        // Setting label
+        parent.spawn(
+            TextBundle::from_section(
+                label,
+                TextStyle {
+                    font_size: 18.0,
+                    color: Color::WHITE,
+                    ..default()
+                }
+            )
+        );
+        
+        // Setting control - built by the provided function
+        content_builder(parent);
+    });
 }
 
 #[derive(Component)]
@@ -314,9 +438,19 @@ pub struct SettingsWrapper(pub settings::Settings);
 
 // Also make Settings implement the new MenuItemPlugin trait
 impl MenuItemPlugin for SettingsWrapper {
+    fn menu_name(&self) -> &'static str {
+        "Settings"
+    }
+    
     fn add_menu_item(&self, world: &mut World, parent: Entity) {
         let mut entity = world.entity_mut(parent);
         entity.insert(SettingsButtonMarker);
+    }
+    
+    fn on_selected(&self, world: &mut World, content_entity: Entity) {
+        // Use the same implementation as SettingsMenuPlugin
+        let settings_plugin = SettingsMenuPlugin::default();
+        settings_plugin.on_selected(world, content_entity);
     }
     
     fn clone_box(&self) -> Box<dyn MenuItemPlugin> {
