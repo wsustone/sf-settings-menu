@@ -4,5 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.14", default-features = false }
-strategyforge-core = { path = "../StrategyForge-Core" }
+bevy = { version = "0.14.2", features = ["default", "bevy_ui", "bevy_text", "bevy_sprite"] }
+bevy_input = "0.14.2"
+bevy_reflect = { version = "0.14.2", features = ["bevy"] }
+
+sf-plugin-template = { path = "../sf-plugin-template" }
+sf-ui-common = { path = "../sf-ui-common" }
+
+

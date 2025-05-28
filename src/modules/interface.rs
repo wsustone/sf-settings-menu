@@ -1,193 +1,104 @@
 use bevy::prelude::*;
-use crate::{
-    ui::{
-        common::*,
-        menu::{
-            settings_menu::GameSettings,
-            settings::{
-                components::*,
-                styles::*,
-                utils::*,
-            },
-        },
-    },
+use bevy::input::keyboard::KeyCode;
+use bevy::input::ButtonInput;
+use bevy::ui::{Interaction, BackgroundColor};
+use sf_ui_common::components::{Focusable, FocusState};
+use sf_ui_common::colors::{
+    button::NORMAL as NORMAL_BUTTON,
+    text::NORMAL as TEXT_COLOR,
 };
 
-/// Spawn interface settings content
-pub fn spawn_interface_settings(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>, settings: &GameSettings) {
-    // Create a scrollable area for the settings content
-    let scroll_content = create_scrollable_area(
-        parent,
-        Style {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
+/// State for managing interface settings UI
+#[derive(Resource, Default)]
+pub struct InterfaceSettingsState {
+    pub focused_element: Option<Entity>,
+}
+
+#[derive(Default)]
+pub struct InterfacePlugin;
+
+impl Plugin for InterfacePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<InterfaceSettingsState>()
+            .add_systems(Update, (
+                handle_interface_settings_keyboard_navigation,
+                update_focus_visuals,
+                handle_interaction_feedback
+            ));
+    }
+}
+
+/// Handle keyboard navigation for interface settings
+fn handle_interface_settings_keyboard_navigation(
+    state: Res<InterfaceSettingsState>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    focus_query: Query<(&Focusable, &mut BackgroundColor), With<Focusable>>,
+) {
+    // Handle keyboard navigation for interface settings
+    if keyboard_input.just_pressed(KeyCode::Tab) {
+        // Handle tab navigation between focusable elements
+    }
+}
+
+/// Update focus visuals for interface settings
+fn update_focus_visuals(
+    mut query: Query<(&Focusable, &mut BackgroundColor), Changed<Focusable>>,
+) {
+    use sf_ui_common::colors::{
+        button::{NORMAL, HOVERED, PRESSED},
+        focus::HIGHLIGHT,
+    };
+
+    for (focusable, mut background_color) in &mut query {
+        *background_color = match focusable.state {
+            FocusState::Focused => HIGHLIGHT.into(),
+            FocusState::Active => PRESSED.into(),
+            FocusState::NotFocused => NORMAL.into(),
+        };
+    }
+}
+
+/// Handle interaction feedback for interface settings
+fn handle_interaction_feedback(
+    mut interaction_query: Query<(&Interaction, &mut BackgroundColor), (Changed<Interaction>, With<Button>)>,
+) {
+    use sf_ui_common::colors::button::{NORMAL, HOVERED, PRESSED};
+
+    for (interaction, mut color) in &mut interaction_query {
+        *color = match interaction {
+            Interaction::Pressed => PRESSED.into(),
+            Interaction::Hovered => HOVERED.into(),
+            Interaction::None => NORMAL.into(),
+        };
+    }
+}
+
+pub fn spawn_interface_settings(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
+    parent.spawn(TextBundle::from_section(
+        "Interface Settings", 
+        TextStyle {
+            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+            font_size: 24.0,
+            color: TEXT_COLOR,
+        })
+    );
+
+    parent.spawn(ButtonBundle {
+        style: Style {
+            width: Val::Px(150.0),
+            height: Val::Px(65.0),
+            margin: UiRect::all(Val::Px(10.0)),
             ..default()
         },
-        true,
-    )
-    .id();
-
-    // Add the interface settings content to the scrollable area
-    parent
-        .spawn((NodeBundle {
-            style: Style {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                padding: UiRect::all(20.0),
-                ..default()
-            },
-            ..default()
-        },))
-        .with_children(|parent| {
-        // Main container with padding
-        parent
-            .spawn((
-                NodeBundle {
-                    style: Style {
-                        width: Val::Percent(100.0),
-                        min_height: Val::Auto,
-                        flex_direction: FlexDirection::Column,
-                        align_items: AlignItems::FlexStart,
-                        justify_content: JustifyContent::FlexStart,
-                        padding: UiRect::all(Val::Px(20.0)),
-                        row_gap: Val::Px(20.0),
-                        ..default()
-                    },
-                    ..default()
-                },
-                SettingsTab::Interface,
-            ))
-            .with_children(|parent| {
-                // UI Scale section
-                let scale_section = utils::create_section(parent, asset_server, "UI Scale & Layout");
-                
-                // Add UI scale settings to the section
-                parent.get_entity_mut(scale_section).unwrap().with_children(|parent| {
-                    // UI Scale
-                    parent.spawn(TextBundle::from_section(
-                        "UI Scale",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // UI scale slider would go here
-                    
-                    // HUD Layout
-                    parent.spawn(TextBundle::from_section(
-                        "HUD Layout",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // HUD layout options would go here
-                    
-                    // Minimap Position
-                    parent.spawn(TextBundle::from_section(
-                        "Minimap Position",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Minimap position options would go here
-                });
-                
-                // Information Display section
-                let info_section = utils::create_section(parent, asset_server, "Information Display");
-                
-                // Add information display settings to the section
-                parent.get_entity_mut(info_section).unwrap().with_children(|parent| {
-                    // Show Tooltips
-                    parent.spawn(TextBundle::from_section(
-                        "Show Tooltips",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Show tooltips toggle would go here
-                    
-                    // Damage Numbers
-                    parent.spawn(TextBundle::from_section(
-                        "Damage Numbers",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Damage numbers toggle would go here
-                    
-                    // Health Bars
-                    parent.spawn(TextBundle::from_section(
-                        "Health Bars",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Health bars toggle would go here
-                });
-                
-                // Chat & Social section
-                let chat_section = utils::create_section(parent, asset_server, "Chat & Social");
-                
-                // Add chat & social settings to the section
-                parent.get_entity_mut(chat_section).unwrap().with_children(|parent| {
-                    // Chat Window
-                    parent.spawn(TextBundle::from_section(
-                        "Chat Window",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Chat window options would go here
-                    
-                    // Social Notifications
-                    parent.spawn(TextBundle::from_section(
-                        "Social Notifications",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Social notification options would go here
-                });
-                
-                // Accessibility section
-                let accessibility_section = utils::create_section(parent, asset_server, "Accessibility");
-                
-                // Add accessibility settings to the section
-                parent.get_entity_mut(accessibility_section).unwrap().with_children(|parent| {
-                    // Colorblind Mode
-                    parent.spawn(TextBundle::from_section(
-                        "Colorblind Mode",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Colorblind mode options would go here
-                    
-                    // Text Size
-                    parent.spawn(TextBundle::from_section(
-                        "Text Size",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Text size slider would go here
-                    
-                    // High Contrast Mode
-                    parent.spawn(TextBundle::from_section(
-                        "High Contrast Mode",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // High contrast mode toggle would go here
-                });
-                
-                // Reset to Defaults button
-                parent.spawn(ButtonBundle {
-                    style: Style {
-                        width: Val::Px(200.0),
-                        height: Val::Px(40.0),
-                        margin: UiRect::top(Val::Px(20.0)),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                    background_color: BackgroundColor(Color::rgb(0.5, 0.1, 0.1)),
-                    ..default()
-                }).with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Reset to Defaults",
-                        styles::button_text_style(asset_server),
-                    ));
-                });
-            });
+        background_color: NORMAL_BUTTON.into(),
+        ..default()
+    }).with_children(|parent| {
+        parent.spawn(TextBundle::from_section("Test", 
+            TextStyle {
+                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size: 20.0,
+                color: TEXT_COLOR,
+            })
+        );
     });
 }

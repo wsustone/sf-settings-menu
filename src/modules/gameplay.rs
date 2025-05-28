@@ -1,150 +1,106 @@
 use bevy::prelude::*;
-use crate::{
-    ui::{
-        common::*,
-        menu::{
-            settings_menu::GameSettings,
-            settings::{
-                components::*,
-                styles::*,
-                utils::*,
-            },
-        },
-    },
+use bevy::input::keyboard::KeyCode;
+use bevy::input::ButtonInput;
+use bevy::ui::{Interaction, BackgroundColor};
+use sf_ui_common::components::{Focusable, FocusState};
+use sf_ui_common::colors::{
+    button::NORMAL as NORMAL_BUTTON,
+    text::NORMAL as TEXT_COLOR,
 };
 
-/// Spawn gameplay settings content
-pub fn spawn_gameplay_settings(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>, settings: &GameSettings) {
-    // Create a scrollable area for the settings content
-    let scroll_content = create_scrollable_area(
-        parent,
-        Style {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
+/// State for managing gameplay settings UI
+#[derive(Resource, Default)]
+pub struct GameplaySettingsState {
+    pub focused_element: Option<Entity>,
+}
+
+#[derive(Default)]
+pub struct GameplayPlugin;
+
+impl Plugin for GameplayPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<GameplaySettingsState>()
+            .add_systems(Update, (
+                handle_gameplay_settings_keyboard_navigation,
+                update_focus_visuals,
+                handle_interaction_feedback
+            ));
+    }
+}
+
+/// Handle keyboard navigation for gameplay settings
+fn handle_gameplay_settings_keyboard_navigation(
+    state: Res<GameplaySettingsState>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    focus_query: Query<(&Focusable, &mut BackgroundColor), With<Focusable>>,
+) {
+    // Handle keyboard navigation for gameplay settings
+    // This is a simplified version - you might want to add more specific navigation logic
+    if keyboard_input.just_pressed(KeyCode::Tab) {
+        // Handle tab navigation between focusable elements
+        // This is a placeholder - implement actual navigation logic here
+    }
+}
+
+/// Update focus visuals for gameplay settings
+fn update_focus_visuals(
+    mut query: Query<(&Focusable, &mut BackgroundColor), Changed<Focusable>>,
+) {
+    use sf_ui_common::colors::{
+        button::{NORMAL, HOVERED, PRESSED},
+        focus::HIGHLIGHT,
+    };
+
+    for (focusable, mut background_color) in &mut query {
+        *background_color = match focusable.state {
+            FocusState::Focused => HIGHLIGHT.into(),
+            FocusState::Active => PRESSED.into(),
+            FocusState::NotFocused => NORMAL.into(),
+        };
+    }
+}
+
+/// Handle interaction feedback for gameplay settings
+fn handle_interaction_feedback(
+    mut interaction_query: Query<(&Interaction, &mut BackgroundColor), (Changed<Interaction>, With<Button>)>,
+) {
+    use sf_ui_common::colors::button::{NORMAL, HOVERED, PRESSED};
+
+    for (interaction, mut color) in &mut interaction_query {
+        *color = match interaction {
+            Interaction::Pressed => PRESSED.into(),
+            Interaction::Hovered => HOVERED.into(),
+            Interaction::None => NORMAL.into(),
+        };
+    }
+}
+
+pub fn spawn_gameplay_settings(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
+    parent.spawn(TextBundle::from_section(
+        "Gameplay Settings", 
+        TextStyle {
+            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+            font_size: 24.0,
+            color: TEXT_COLOR,
+        })
+    );
+
+    parent.spawn(ButtonBundle {
+        style: Style {
+            width: Val::Px(150.0),
+            height: Val::Px(65.0),
+            margin: UiRect::all(Val::Px(10.0)),
             ..default()
         },
-        true,
-    )
-    .id();
-
-    // Add the gameplay settings content to the scrollable area
-    parent
-        .spawn((NodeBundle {
-            style: Style {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                padding: UiRect::all(20.0),
-                ..default()
-            },
-            ..default()
-        },))
-        .with_children(|parent| {
-        // Main container with padding
-        parent
-            .spawn((
-                NodeBundle {
-                    style: Style {
-                        width: Val::Percent(100.0),
-                        min_height: Val::Auto,
-                        flex_direction: FlexDirection::Column,
-                        align_items: AlignItems::FlexStart,
-                        justify_content: JustifyContent::FlexStart,
-                        padding: UiRect::all(Val::Px(20.0)),
-                        row_gap: Val::Px(20.0),
-                        ..default()
-                    },
-                    ..default()
-                },
-                SettingsTab::Gameplay,
-            ))
-            .with_children(|parent| {
-                // Game Rules section
-                let rules_section = utils::create_section(parent, asset_server, "Game Rules");
-                
-                // Add game rules settings to the section
-                parent.entity(rules_section).with_children(|parent| {
-                    // Difficulty
-                    parent.spawn(TextBundle::from_section(
-                        "Difficulty",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Difficulty options would go here
-                    
-                    // Game Speed
-                    parent.spawn(TextBundle::from_section(
-                        "Game Speed",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Game speed slider would go here
-                });
-                
-                // User Interface section
-                let ui_section = utils::create_section(parent, asset_server, "User Interface");
-                
-                // Add UI settings to the section
-                parent.entity(ui_section).with_children(|parent| {
-                    // Show Tutorials
-                    parent.spawn(TextBundle::from_section(
-                        "Show Tutorials",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Show tutorials toggle would go here
-                    
-                    // Tooltip Delay
-                    parent.spawn(TextBundle::from_section(
-                        "Tooltip Delay",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Tooltip delay slider would go here
-                });
-                
-                // Notifications section
-                let notifications_section = utils::create_section(parent, asset_server, "Notifications");
-                
-                // Add notification settings to the section
-                parent.entity(notifications_section).with_children(|parent| {
-                    // Enable Notifications
-                    parent.spawn(TextBundle::from_section(
-                        "Enable Notifications",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Enable notifications toggle would go here
-                    
-                    // Notification Types
-                    parent.spawn(TextBundle::from_section(
-                        "Notification Types",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Notification type checkboxes would go here
-                });
-                
-                // Save & Load section
-                let save_section = utils::create_section(parent, asset_server, "Save & Load");
-                
-                // Add save/load settings to the section
-                parent.entity(save_section).with_children(|parent| {
-                    // Auto-save
-                    parent.spawn(TextBundle::from_section(
-                        "Auto-save",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Auto-save toggle and interval would go here
-                    
-                    // Cloud Saves
-                    parent.spawn(TextBundle::from_section(
-                        "Cloud Saves",
-                        styles::subsection_title_style(asset_server),
-                    ));
-                    
-                    // Cloud saves toggle would go here
-                });
-            });
+        background_color: NORMAL_BUTTON.into(),
+        ..default()
+    }).with_children(|parent| {
+        parent.spawn(TextBundle::from_section("Test", 
+            TextStyle {
+                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size: 20.0,
+                color: TEXT_COLOR,
+            })
+        );
     });
 }

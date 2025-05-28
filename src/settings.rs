@@ -1,26 +1,33 @@
 use bevy::prelude::*;
-use strategyforge_core::menu::MenuItemPlugin;
+use sf_plugin_template::MenuItemPlugin;
 
 // Module declarations
 #[path = "modules/video.rs"]
 pub mod video;
 #[path = "modules/audio.rs"]
 pub mod audio;
+#[path = "modules/gameplay.rs"]
 pub mod gameplay;
+#[path = "modules/controls.rs"]
 pub mod controls;
+#[path = "modules/interface.rs"]
 pub mod interface;
-pub mod utils;
-
 // Re-exports
 pub use video::*;
 pub use audio::*;
 pub use gameplay::*;
 pub use controls::*;
 pub use interface::*;
-pub use utils::*;
+
+// Re-export plugin types
+pub use audio::AudioPlugin;
+pub use controls::ControlsPlugin;
+pub use gameplay::GameplayPlugin;
+pub use interface::InterfacePlugin;
+pub use video::VideoPlugin;
 
 // Main settings components
-#[derive(Component, Reflect, Default)]
+#[derive(Component, Reflect, Default, Clone)]
 #[reflect(Component)]
 pub struct VideoSettings {
     pub display_mode: DisplayMode,
@@ -31,7 +38,7 @@ pub struct VideoSettings {
     pub ui_scale: f32,
 }
 
-#[derive(Reflect, Default)]
+#[derive(Reflect, Default, Clone)]
 pub enum DisplayMode {
     #[default]
     Windowed,
@@ -39,7 +46,7 @@ pub enum DisplayMode {
     Borderless,
 }
 
-#[derive(Reflect, Default)]
+#[derive(Reflect, Default, Clone)]
 pub enum GraphicsQuality {
     Low,
     Medium,
@@ -49,7 +56,7 @@ pub enum GraphicsQuality {
 }
 
 /// Audio settings component
-#[derive(Component, Reflect, Default)]
+#[derive(Component, Reflect, Default, Clone)]
 #[reflect(Component)]
 pub struct AudioSettings {
     pub master_volume: f32,
@@ -61,7 +68,7 @@ pub struct AudioSettings {
 }
 
 /// Game settings component
-#[derive(Component, Reflect, Default)]
+#[derive(Component, Reflect, Default, Clone)]
 #[reflect(Component)]
 pub struct GameplaySettings {
     pub difficulty: Difficulty,
@@ -69,7 +76,7 @@ pub struct GameplaySettings {
     pub subtitles: bool,
 }
 
-#[derive(Reflect, Default)]
+#[derive(Reflect, Default, Clone)]
 pub enum Difficulty {
     Easy,
     #[default]
@@ -77,25 +84,48 @@ pub enum Difficulty {
     Hard,
 }
 
-#[derive(Component, Reflect, Default)]
+#[derive(Component, Reflect, Default, Clone)]
 #[reflect(Component)]
-pub struct ControlSettings {
-    // TODO: Define controls settings
+pub struct ControlsSettings {
+    pub mouse_sensitivity: f32,
+    pub invert_y: bool,
+    pub keybinds: KeybindSettings,
 }
 
-#[derive(Component, Reflect, Default)]
+#[derive(Component, Reflect, Default, Clone)]
 #[reflect(Component)]
 pub struct InterfaceSettings {
-    // TODO: Define interface settings
+    pub ui_scale: f32,
+    pub colorblind_mode: u8,
 }
 
-#[derive(Component, Reflect, Default)]
+#[derive(Component, Reflect, Clone)]
+#[reflect(Component)]
+pub struct KeybindSettings {
+    pub camera_pan_up: KeyCode,
+    pub camera_pan_down: KeyCode,
+    pub camera_pan_left: KeyCode,
+    pub camera_pan_right: KeyCode,
+}
+
+impl Default for KeybindSettings {
+    fn default() -> Self {
+        Self {
+            camera_pan_up: KeyCode::KeyW,
+            camera_pan_down: KeyCode::KeyS,
+            camera_pan_left: KeyCode::KeyA,
+            camera_pan_right: KeyCode::KeyD,
+        }
+    }
+}
+
+#[derive(Component, Reflect, Default, Clone)]
 #[reflect(Component)]
 pub struct Settings {
     pub video: VideoSettings,
     pub audio: AudioSettings,
     pub gameplay: GameplaySettings,
-    pub controls: ControlSettings,
+    pub controls: ControlsSettings,
     pub interface: InterfaceSettings,
 }
 
@@ -105,7 +135,7 @@ pub struct SettingsState {
     pub is_visible: bool,
 }
 
-#[derive(Default, Reflect)]
+#[derive(Default, Reflect, Clone)]
 pub enum SettingsTab {
     #[default]
     Video,
@@ -126,8 +156,9 @@ impl Plugin for SettingsPlugin {
             .register_type::<VideoSettings>()
             .register_type::<AudioSettings>()
             .register_type::<GameplaySettings>()
-            .register_type::<ControlSettings>()
+            .register_type::<ControlsSettings>()
             .register_type::<InterfaceSettings>()
+            .register_type::<KeybindSettings>()
             .add_plugins((
                 VideoPlugin,
                 AudioPlugin,
