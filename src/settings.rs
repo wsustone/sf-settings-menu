@@ -129,7 +129,7 @@ pub struct Settings {
     pub interface: InterfaceSettings,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Reflect)]
 pub struct SettingsState {
     pub current_tab: SettingsTab,
     pub is_visible: bool,

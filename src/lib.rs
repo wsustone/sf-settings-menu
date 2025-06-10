@@ -2,6 +2,7 @@
 
 pub mod modules;
 pub mod settings;
+mod create_plugin;
 
 // Re-exports - only export the spawn functions to avoid conflicts
 pub use modules::audio::spawn_audio_settings;
@@ -12,9 +13,12 @@ pub use modules::video::spawn_video_settings;
 
 use bevy::prelude::*;
 use bevy_reflect::Reflect;
-use sf_plugin_template::{MenuItemPlugin, MenuItem, MenuContent};
+use sf_plugin_template::{MenuItemPlugin, MenuItem, MenuContent, GamePlugin};
 use sf_ui_common::colors;
 use sf_ui_common::components::{Focusable, FocusState, FocusableType};
+
+// Import PluginHandle from sf-plugin-template but rename it to avoid conflicts
+use sf_plugin_template::PluginHandle as SfPluginHandle;
 
 // Re-export settings types
 pub use settings::{
@@ -30,7 +34,10 @@ pub use settings::{
 
 /// Main plugin for settings menu
 #[derive(Default, Clone)]
-pub struct SettingsMenuPlugin;
+pub struct SettingsMenuPlugin {
+    /// Whether this plugin has been registered with the menu system
+    registered: bool,
+}
 
 impl Plugin for SettingsMenuPlugin {
     fn build(&self, app: &mut App) {
@@ -40,53 +47,71 @@ impl Plugin for SettingsMenuPlugin {
             .register_type::<VideoSettings>()
             .register_type::<ControlsSettings>()
             .register_type::<GameplaySettings>()
-            .register_type::<InterfaceSettings>();
+            .register_type::<InterfaceSettings>()
+            .register_type::<SettingsTab>()
+            .register_type::<SettingsState>();
             
-        // Add settings menu systems
-        app.add_systems(Startup, setup_settings_menu);
+        // Only add the setup system if we haven't registered yet
+        if !self.registered {
+            app.add_systems(Startup, setup_settings_menu);
+        }
+    }
+}
+
+impl GamePlugin for SettingsMenuPlugin {
+    fn name(&self) -> &'static str {
+        "SettingsMenuPlugin"
+    }
+    
+    fn version(&self) -> &'static str {
+        "0.1.0"
     }
 }
 
 impl MenuItemPlugin for SettingsMenuPlugin {
+    fn menu_label(&self) -> &'static str {
+        self.menu_name()
+    }
+    
     fn menu_name(&self) -> &'static str {
         "Settings"
     }
     
-    fn add_menu_item(&self, world: &mut World, parent: Entity) {
-        // Add menu item button to the menu
-        let mut entity = world.entity_mut(parent);
-        entity.with_children(|parent| {
-            parent.spawn((
-                ButtonBundle {
-                    style: Style {
-                        width: Val::Percent(100.0),
-                        height: Val::Px(50.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        margin: UiRect::all(Val::Px(5.0)),
-                        ..default()
-                    },
-                    background_color: colors::button::NORMAL.into(),
+    fn add_menu_item(&self, parent: &mut ChildBuilder, asset_server: &AssetServer) -> Entity {
+        // Create a menu item button
+        parent.spawn((
+            ButtonBundle {
+                style: Style {
+                    width: Val::Px(200.0),
+                    height: Val::Px(50.0),
+                    margin: UiRect::all(Val::Px(5.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
                     ..default()
                 },
-                MenuItem {
-                    plugin_name: self.menu_name().to_string(),
-                    selected: false,
-                }
-            )).with_children(|parent| {
-                parent.spawn(
-                    TextBundle::from_section(
-                        self.menu_name(),
-                        TextStyle {
-                            font_size: 20.0,
-                            color: Color::WHITE,
-                            ..default()
-                        }
-                    )
-                );
-            });
-        });
+                background_color: colors::button::NORMAL.into(),
+                ..default()
+            },
+            MenuItem {
+                plugin_name: self.menu_name().to_string(),
+                selected: false,
+            },
+            Name::new("SettingsMenuItem"),
+        )).with_children(|button| {
+            button.spawn(
+                TextBundle::from_section(
+                    self.menu_label(),
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 24.0,
+                        color: Color::WHITE,
+                    },
+                ),
+            );
+        }).id()
     }
+    
+
     
     fn on_selected(&self, world: &mut World, content_entity: Entity) {
         // Display settings content when this menu item is selected
@@ -369,7 +394,7 @@ where
                 padding: UiRect::horizontal(Val::Px(20.0)),
                 ..default()
             },
-            background_color: Color::rgb(0.2, 0.2, 0.2).into(),
+            background_color: Color::srgb(0.2, 0.2, 0.2).into(),
             ..default()
         }
     ).with_children(|parent| {
@@ -438,14 +463,14 @@ pub struct SettingsWrapper(pub settings::Settings);
 
 // Also make Settings implement the new MenuItemPlugin trait
 impl MenuItemPlugin for SettingsWrapper {
+    fn menu_label(&self) -> &'static str {
+        self.menu_name()
+    }
     fn menu_name(&self) -> &'static str {
         "Settings"
     }
     
-    fn add_menu_item(&self, world: &mut World, parent: Entity) {
-        let mut entity = world.entity_mut(parent);
-        entity.insert(SettingsButtonMarker);
-    }
+
     
     fn on_selected(&self, world: &mut World, content_entity: Entity) {
         // Use the same implementation as SettingsMenuPlugin
@@ -511,7 +536,7 @@ fn setup_settings_menu(mut commands: Commands) {
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            background_color: Color::rgba(0.1, 0.1, 0.1, 0.9).into(),
+            background_color: Color::srgba(0.1, 0.1, 0.1, 0.9).into(),
             visibility: Visibility::Hidden,
             ..default()
         },

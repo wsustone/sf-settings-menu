@@ -3,12 +3,21 @@ name = "sf-settings-menu"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib"]
+
+# Prevent including sf-plugin-template in the final binary
+# This helps avoid symbol conflicts
+proc-macro = false
+
 [dependencies]
 bevy = { version = "0.14.2", features = ["default", "bevy_ui", "bevy_text", "bevy_sprite"] }
-bevy_input = "0.14.2"
+bevy_input = { version = "0.14.2" }
 bevy_reflect = { version = "0.14.2", features = ["bevy"] }
+bevy_egui = { version = "0.27.1" }
+egui = { version = "0.27.1" }
 
+# sf-plugin-template defines the plugin interface
 sf-plugin-template = { path = "../sf-plugin-template" }
+# sf-ui-common provides common UI elements needed by this plugin
 sf-ui-common = { path = "../sf-ui-common" }
-
-
